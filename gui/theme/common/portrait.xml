@@ -5181,7 +5181,7 @@
 		</page>
 
 		<page name="lock">
-			<background color="#191919"/>
+			<background color="#000000"/>
 
 			<image>
 				<image resource="splashlogo"/>
