@@ -199,6 +199,11 @@ endif
 ifneq ($(TW_SYSTEM_BUILD_PROP_ADDITIONAL_PATHS),)
     LOCAL_CFLAGS += -DTW_SYSTEM_BUILD_PROP_ADDITIONAL_PATHS='"$(TW_SYSTEM_BUILD_PROP_ADDITIONAL_PATHS)"'
 endif
+
+ifeq ($(TW_PREPARE_DATA_MEDIA_EARLY),true)
+    LOCAL_CFLAGS += -DTW_PREPARE_DATA_MEDIA_EARLY
+endif
+
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/system/bin
 
 ifeq ($(TARGET_RECOVERY_TWRP_LIB),)
@@ -348,13 +353,6 @@ ifeq ($(TW_INCLUDE_CRYPTO), true)
     LOCAL_STATIC_LIBRARIES += libkeymint_support
 
     LOCAL_CFLAGS += -DTW_INCLUDE_FBE_METADATA_DECRYPT
-    ifneq ($(TW_CRYPTO_USE_SYSTEM_VOLD),)
-    ifneq ($(TW_CRYPTO_USE_SYSTEM_VOLD),false)
-		TW_INCLUDE_LIBRESETPROP := true
-        LOCAL_CFLAGS += -DTW_CRYPTO_USE_SYSTEM_VOLD
-        LOCAL_STATIC_LIBRARIES += libvolddecrypt
-    endif
-    endif
 
     ifeq ($(TARGET_HW_DISK_ENCRYPTION),true)
         ifeq ($(TARGET_CRYPTFS_HW_PATH),)
@@ -740,13 +738,7 @@ ifneq ($(TW_OZIP_DECRYPT_KEY),)
 endif
 
 ifeq ($(TW_INCLUDE_CRYPTO), true)
-    # include $(commands_TWRP_local_path)/crypto/fde/Android.mk
     include $(commands_TWRP_local_path)/crypto/scrypt/Android.mk
-    ifneq ($(TW_CRYPTO_USE_SYSTEM_VOLD),)
-    ifneq ($(TW_CRYPTO_USE_SYSTEM_VOLD),false)
-        include $(commands_TWRP_local_path)/crypto/vold_decrypt/Android.mk
-    endif
-    endif
     include $(commands_TWRP_local_path)/gpt/Android.mk
 endif
 ifeq ($(BUILD_ID), GINGERBREAD)

@@ -112,9 +112,6 @@ extern "C" {
 	#endif
 #endif
 #endif
-#ifdef TW_CRYPTO_USE_SYSTEM_VOLD
-#include "crypto/vold_decrypt/vold_decrypt.h"
-#endif
 #endif
 
 #ifdef AB_OTA_UPDATER
@@ -1505,26 +1502,6 @@ int TWPartitionManager::Wipe_Magisk_Modules(void) {
 	return true;
 }
 
-int TWPartitionManager::Wipe_FBE_Cache(void) {
-	string fbe_dir = "/data/misc";
-	string fbe_dir2 = "/data/system";
-	string fbe_dir3 = "/data/system_de";
-	string fbe_dir4 = "/data/unencrypted";
-
-	if (!Mount_By_Path("/data", true)) return false;
-
-	if (TWFunc::Path_Exists(fbe_dir)) TWFunc::removeDir(fbe_dir, false);
-
-	if (TWFunc::Path_Exists(fbe_dir2)) TWFunc::removeDir(fbe_dir2, false);
-
-	if (TWFunc::Path_Exists(fbe_dir3)) TWFunc::removeDir(fbe_dir3, false);
-
-	if (TWFunc::Path_Exists(fbe_dir4)) TWFunc::removeDir(fbe_dir4, false);
-
-	gui_msg("fbe_done=-- FBE Cache Wipe Complete!");
-	return true;
-}
-
 int TWPartitionManager::Wipe_By_Path(string Path, string New_File_System) {
 	std::vector<TWPartition*>::iterator iter;
 	int ret = false;
@@ -2168,26 +2145,6 @@ int TWPartitionManager::Decrypt_Device(string Password, int user_id) {
 			pwret = WEXITSTATUS(status) ? -1 : 0;
 	}
 
-#ifdef TW_CRYPTO_USE_SYSTEM_VOLD
-	if (pwret != 0) {
-		pwret = vold_decrypt(Password);
-		switch (pwret) {
-			case VD_SUCCESS:
-				break;
-			case VD_ERR_MISSING_VDC:
-				gui_msg(Msg(msg::kError,
-										"decrypt_data_vold_os_missing=Missing files needed for vold decrypt: {1}")(
-						"/system/bin/vdc"));
-				break;
-			case VD_ERR_MISSING_VOLD:
-				gui_msg(Msg(msg::kError,
-										"decrypt_data_vold_os_missing=Missing files needed for vold decrypt: {1}")(
-						"/system/bin/vold"));
-				break;
-		}
-	}
-#endif	// TW_CRYPTO_USE_SYSTEM_VOLD
-
 	// Unmount any partitions that were needed for decrypt
 	for (iter = Partitions.begin(); iter != Partitions.end(); iter++) {
 		if ((*iter)->Mount_To_Decrypt) {
@@ -2663,13 +2620,6 @@ void TWPartitionManager::Get_Partition_List(string ListType,
 		magisk.Mount_Point = "MAGISK";
 		magisk.selected = 0;
 		Partition_List->push_back(magisk);
-		if (DataManager::GetIntValue(TW_IS_FBE)) {
-			struct PartitionList fbe;
-			fbe.Display_Name = gui_parse_text("{@pb_wipe_fbe_cache}");
-			fbe.Mount_Point = "FBE";
-			fbe.selected = 0;
-			Partition_List->push_back(fbe);
-		}
 		for (iter = Partitions.begin(); iter != Partitions.end(); iter++) {
 			if ((*iter)->Wipe_Available_in_GUI && !(*iter)->Is_SubPartition) {
 				struct PartitionList part;
@@ -4087,6 +4037,7 @@ bool TWPartitionManager::Prepare_Super_Volume(TWPartition* twrpPart) {
 	if (access(("/dev/block/bootdevice/by-name/" + bare_partition_name).c_str(), F_OK) == -1) {
 		LOGINFO("Symlinking %s => /dev/block/bootdevice/by-name/%s \n", fstabEntry.blk_device.c_str(), bare_partition_name.c_str());
 		symlink(fstabEntry.blk_device.c_str(), ("/dev/block/bootdevice/by-name/" + bare_partition_name).c_str());
+		property_set("twrp.super.symlinks_created", "true");
 	}
 	return true;
 }
